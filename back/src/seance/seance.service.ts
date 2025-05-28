@@ -1,26 +1,34 @@
-import { Injectable } from '@nestjs/common';
-import { CreateSeanceDto } from './dto/create-seance.dto';
-import { UpdateSeanceDto } from './dto/update-seance.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Seance } from './entities/seance.entity';
+import { User } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class SeanceService {
-  create(createSeanceDto: CreateSeanceDto) {
-    return 'This action adds a new seance';
+  constructor(
+    @InjectRepository(Seance)
+    private seanceRepository: Repository<Seance>,
+  ) {}
+
+  async create(title: string, date: Date, createdBy: User): Promise<Seance> {
+    const qrCodeData = `${title}-${Date.now()}`; 
+    const seance = this.seanceRepository.create({
+      title,
+      date,
+      createdBy,
+      qrCodeData,
+    });
+    return this.seanceRepository.save(seance);
   }
 
-  findAll() {
-    return `This action returns all seance`;
+  async findAll(): Promise<Seance[]> {
+    return this.seanceRepository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} seance`;
-  }
-
-  update(id: number, updateSeanceDto: UpdateSeanceDto) {
-    return `This action updates a #${id} seance`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} seance`;
+  async findOne(id: number): Promise<Seance> {
+    const seance = await this.seanceRepository.findOne({ where: { id: id.toString() } });
+    if (!seance) throw new NotFoundException('Séance non trouvée');
+    return seance;
   }
 }

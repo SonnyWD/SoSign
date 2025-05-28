@@ -1,26 +1,38 @@
-import { Injectable } from '@nestjs/common';
-import { CreateSignatureDto } from './dto/create-signature.dto';
-import { UpdateSignatureDto } from './dto/update-signature.dto';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Signature } from './entities/signature.entity';
+import { Seance } from 'src/seance/entities/seance.entity';
+import { User } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class SignatureService {
-  create(createSignatureDto: CreateSignatureDto) {
-    return 'This action adds a new signature';
+  constructor(
+    @InjectRepository(Signature)
+    private signatureRepository: Repository<Signature>,
+
+    @InjectRepository(Seance)
+    private seanceRepository: Repository<Seance>,
+  ) {}
+
+  async sign(seanceId: number, user: User): Promise<Signature> {
+    const seance = await this.seanceRepository.findOne({ where: { id: seanceId.toString() } });
+    if (!seance) throw new NotFoundException('Séance non trouvée');
+
+    const alreadySigned = await this.signatureRepository.findOne({
+      where: { seance: { id: seanceId.toString() }, user: { id: user.id } },
+    });
+
+    if (alreadySigned) throw new ConflictException('Déjà signé');
+
+    const signature = this.signatureRepository.create({ seance, user });
+    return this.signatureRepository.save(signature);
   }
 
-  findAll() {
-    return `This action returns all signature`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} signature`;
-  }
-
-  update(id: number, updateSignatureDto: UpdateSignatureDto) {
-    return `This action updates a #${id} signature`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} signature`;
+  async getSignaturesBySeance(seanceId: number): Promise<Signature[]> {
+    return this.signatureRepository.find({
+      where: { seance: { id: seanceId.toString() } },
+      relations: ['user'],
+    });
   }
 }

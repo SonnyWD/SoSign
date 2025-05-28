@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import Card from "../components/card";
 
 function Accueil() {

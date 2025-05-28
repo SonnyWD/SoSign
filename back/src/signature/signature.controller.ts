@@ -1,34 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Post, Param, UseGuards, Request, Get } from '@nestjs/common';
 import { SignatureService } from './signature.service';
-import { CreateSignatureDto } from './dto/create-signature.dto';
-import { UpdateSignatureDto } from './dto/update-signature.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('signature')
 export class SignatureController {
   constructor(private readonly signatureService: SignatureService) {}
 
-  @Post()
-  create(@Body() createSignatureDto: CreateSignatureDto) {
-    return this.signatureService.create(createSignatureDto);
+  @UseGuards(JwtAuthGuard)
+  @Post(':seanceId')
+  sign(@Param('seanceId') seanceId: string, @Request() req) {
+    return this.signatureService.sign(+seanceId, req.user);
   }
 
-  @Get()
-  findAll() {
-    return this.signatureService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.signatureService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSignatureDto: UpdateSignatureDto) {
-    return this.signatureService.update(+id, updateSignatureDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.signatureService.remove(+id);
+  @UseGuards(JwtAuthGuard)
+  @Get('seance/:seanceId')
+  getSignatures(@Param('seanceId') seanceId: string) {
+    return this.signatureService.getSignaturesBySeance(+seanceId);
   }
 }
